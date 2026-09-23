@@ -126,7 +126,7 @@ Repeat `--phone` for more than one number. A blank number is omitted. No usable 
 - An email with the portal enabled, and neither invite flag, sends `true`.
 - `--send-portal-invite` or `--no-send-portal-invite` applies only when an email is present and the portal is enabled.
 
-The client record does not return `sendPortalInvite`. It returns `hasSentPortalInvite`. That stays `false` when the body sent `false`. When the body sent `true`, it becomes `true` shortly after the create. The script waits for that value before printing the result.
+The create body sends `sendPortalInvite`. The client record reports the result later as `hasSentPortalInvite`.
 
 ### Messaging
 
@@ -158,7 +158,7 @@ The body is one field:
 
 The line starts with `Medications:` and the medication name. `--dose` and `--frequency` are appended only when they contain text. Either flag can be omitted, and a blank value is left out.
 
-The script loads the client’s current notes, appends the new line, and sends the full string. A client with no existing note is sent only the new line. If the following read does not match the string that was sent, the script exits with an error.
+The script loads the client’s current notes, appends the new line, and sends the full string. A client with no existing note is sent only the new line.
 
 ## Request chain
 
@@ -169,7 +169,6 @@ The script loads the client’s current notes, appends the new line, and sends t
 5. `GET {api}/meta/enums?culture=en-US` when `--title`, `--gender`, or `--concession-type` is set.
 6. `POST {api}/clients`.
 7. `GET {api}/clients/{id}` for the current notes, then `PUT {api}/clients/{id}/notes`.
-8. `GET {api}/clients/{id}` to confirm the saved note. When the create sent `sendPortalInvite: true`, this read is repeated until `hasSentPortalInvite` is `true`.
 
 API calls send:
 
@@ -181,6 +180,6 @@ Authorization: Session {sessionId}:{verification}
 
 ## Output
 
-Success prints JSON and exits `0`. The payload includes `client_id`, `patient_id`, the create body, the notes body, and a `verified` object from the final read: name, sex id, concession id, `hasSentPortalInvite`, billing and residential flags and addresses, and `notes`.
+Success prints JSON and exits `0`. The payload includes `client_id`, `patient_id`, the create body, and the notes body.
 
 Failure prints a JSON error to stderr and exits `1`. That includes rejected input, HTTP errors, and an HTTP 200 body that still contains an error. A login response of `429` means too many attempts.

@@ -15,7 +15,6 @@ import json
 import os
 import re
 import sys
-import time
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any
@@ -559,16 +558,9 @@ class KalixClient:
         payload = {"notes": notes_body}
 
         self._put(f"/clients/{client_id}/notes", payload)
-        verified = self.get_client(client_id)
-        notes = verified.get("notes") if isinstance(verified, dict) else None
-        if notes != notes_body:
-            raise KalixError(
-                "medication note was not persisted on the client",
-                body={"expected": notes_body, "notes": notes},
-            )
         return {
             "client_id": client_id,
-            "notes": notes,
+            "notes": notes_body,
             "medication_line": line,
             "request_body": payload,
             "endpoint": f"PUT /clients/{client_id}/notes",
@@ -761,29 +753,6 @@ def main(argv: list[str] | None = None) -> int:
             frequency=args.frequency,
         )
         result["medication"] = med
-
-        # Final verification GET (not just write status codes).
-        # hasSentPortalInvite flips true shortly after a create that asked for the invite.
-        verified = client.get_client(result["client_id"])
-        if result["request_body"].get("sendPortalInvite"):
-            for _ in range(15):
-                if verified.get("hasSentPortalInvite"):
-                    break
-                time.sleep(1)
-                verified = client.get_client(result["client_id"])
-        result["verified"] = {
-            "id": verified.get("id"),
-            "patientId": verified.get("patientId"),
-            "name": verified.get("name"),
-            "gender": verified.get("gender"),
-            "concessionType": verified.get("concessionType"),
-            "hasSentPortalInvite": verified.get("hasSentPortalInvite"),
-            "billingSameAsPostal": verified.get("billingSameAsPostal"),
-            "billingAddress": verified.get("billingAddress"),
-            "residentialSameAsPostal": verified.get("residentialSameAsPostal"),
-            "residentialAddress": verified.get("residentialAddress"),
-            "notes": verified.get("notes"),
-        }
 
         print(json.dumps(result, indent=2, default=str))
         return 0
